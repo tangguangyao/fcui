@@ -759,7 +759,7 @@ define(function (require) {
         // getGroup 遇到空会新建一个空的，所以不怕空
         lib.disposeControlsInGroup(this.viewContext.getGroup(this.getGroupName('head')));
         if (this.isNeedCoverHead) {
-            lib.disposeControlsInGroup(this.viewContext.getGroup(this.getGroupName('cover-head')));
+            lib.disposeControlsInGroup(this.viewContext.getGroup(this.getGroupName('coverhead')));
         }
     };
 
@@ -924,19 +924,21 @@ define(function (require) {
                 layer = this.getChild(this.getSortLayerId(field));
                 layer && layer.setContent(this.getSortLayerContent(columnIndex));
             }
-            columnIndex = this.fieldsMap[change.newValue];
-            sorted = lib.getChildren(lib.dom.first(head))[columnIndex];
-            this.helper.addPartClasses('hcell-' + this.order, sorted);
-            // 给表体对应的cell加上-cell-sorted class
-            sorted = lib.findAll(this.getBody(),
-                '.ui-fctable-cell:nth-child(' + (columnIndex + 1) + ')'
-            );
-            u.each(sorted, function (el, index) {
-                this.helper.addPartClasses('cell-sorted', el);
-            }, this);
+            if (change.newValue) {
+                columnIndex = this.fieldsMap[change.newValue];
+                sorted = lib.getChildren(lib.dom.first(head))[columnIndex];
+                this.helper.addPartClasses('hcell-' + this.order, sorted);
+                // 给表体对应的cell加上-cell-sorted class
+                sorted = lib.findAll(this.getBody(),
+                    '.ui-fctable-cell:nth-child(' + (columnIndex + 1) + ')'
+                );
+                u.each(sorted, function (el, index) {
+                    this.helper.addPartClasses('cell-sorted', el);
+                }, this);
+            }
         }
 
-        if (typeof changesIndex.order !== 'undefined') {
+        if (typeof changesIndex.order !== 'undefined' && this.orderBy) {
             change = changesIndex.order;
             columnIndex = this.fieldsMap[this.orderBy];
             if (!isNullOrEmpty(change.oldValue)) {
@@ -952,10 +954,12 @@ define(function (require) {
             );
         }
 
-        columnIndex = this.fieldsMap[this.orderBy];
-        field = this.realFields[columnIndex];
-        layer = this.getChild(this.getSortLayerId(field));
-        layer && layer.setContent(this.getSortLayerContent(columnIndex));
+        if (this.order && this.orderBy) {
+            columnIndex = this.fieldsMap[this.orderBy];
+            field = this.realFields[columnIndex];
+            layer = this.getChild(this.getSortLayerId(field));
+            layer && layer.setContent(this.getSortLayerContent(columnIndex));
+        }
     };
 
     /**
@@ -1528,7 +1532,7 @@ define(function (require) {
      * @override
      * @protected
      */
-    proto.initStructure = function() {
+    proto.initStructure = function () {
         this.$super(arguments);
 
         if (this.hasVborder) {
@@ -1838,7 +1842,7 @@ define(function (require) {
      * @param {Array} datasource 数据源
      * @public
      */
-    proto.setDatasource = function(datasource) {
+    proto.setDatasource = function (datasource) {
         this.datasource = datasource;
         this.selectedIndex = [];
         var record = {name: 'datasource'};
@@ -2051,7 +2055,7 @@ define(function (require) {
      * @public
      * @return {Array} 选中的项
      */
-    proto.getSelectedItems = function() {
+    proto.getSelectedItems = function () {
         switch (this.select.toLowerCase()) {
             case 'multi':
                 if (this.selectedIndex === -1) {
@@ -2163,6 +2167,8 @@ define(function (require) {
             var rowNode = tbody.rows[0];
             var inTableRow = this.getRow(row);
             rowNode.className = inTableRow.className;
+            // 销毁当前row下所有控件
+            lib.disposeControls(inTableRow);
             this.getBody().removeChild(inTableRow);
             inTableRow = this.getRow(row + 1);
             if (inTableRow) {
@@ -2173,13 +2179,18 @@ define(function (require) {
             }
         }
         else {
-            this.getRow(row).innerHTML = html;
+            var tableRow = this.getRow(row);
+            // 销毁当前row下所有控件
+            lib.disposeControls(tableRow);
+            tableRow.innerHTML = html;
         }
         if (this.bodyHasControls) {
             this.helper.initChildren(this.getRow(row), {
                 group: this.getGroupName('body')
             });
         }
+
+        this.fire('rowchanged', {rowIndex: row, rowData: data});
     };
 
     /**
