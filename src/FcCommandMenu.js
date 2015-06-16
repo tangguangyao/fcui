@@ -25,7 +25,10 @@ define(
          * @param {Event} e DOM事件对象
          * @ignore
          */
-        function selectItem(e) {
+        function selectItem(datasource, e) {
+            for (var i in this.subLayers) {
+                this.subLayers[i].hide();
+            }
             this.layer.hide();
 
             var target = e.target;
@@ -47,7 +50,7 @@ define(
             }
 
             var index = +target.getAttribute('data-index');
-            var item = this.datasource[index];
+            var item = datasource[index];
             if (item) {
                 if (typeof item.handler === 'function') {
                     item.handler.call(this, item, index);
@@ -75,6 +78,7 @@ define(
          */
         function CommandMenuLayer() {
             Layer.apply(this, arguments);
+            this.subLayers = {};
         }
 
         lib.inherits(CommandMenuLayer, Layer);
@@ -88,41 +92,179 @@ define(
             strictWidth: true
         };
 
-        CommandMenuLayer.prototype.render = function (element) {
+        function getHiddenClasses(layer) {
+            var classes = layer.control.helper.getPartClasses('layer-hidden');
+            classes.unshift('ui-layer-hidden');
+
+            return classes;
+        }
+
+        /**
+         * 根据数据项获取菜单html内容
+         * @param {Control} control 菜单所关联的Control
+         * @param {Object} datasource 菜单的数据项。
+         */
+        function getLayerHtml(control, datasource) {
             var html = '';
 
-            for (var i = 0; i < this.control.datasource.length; i++) {
-                var dataItem =  this.control.datasource[i];
-                var classes = this.control.helper.getPartClasses('node');
-                if (i === this.control.activeIndex) {
+            for (var i = 0; i < datasource.length; i++) {
+                var dataItem =  datasource[i];
+                var classes = control.helper.getPartClasses('node');
+                if (i === control.activeIndex) {
                     classes.push.apply(
                         classes,
-                        this.control.helper.getPartClasses('node-active')
+                        control.helper.getPartClasses('node-active')
                     );
                 }
                 if (dataItem.disabled) {
                     classes.push.apply(
                         classes,
-                        this.control.helper.getPartClasses('node-disabled')
+                        control.helper.getPartClasses('node-disabled')
+                    );
+                }
+                if (dataItem.children && dataItem.children.length > 0) {
+                    classes.push.apply(
+                        classes,
+                        control.helper.getPartClasses('node-has-children')
                     );
                 }
                 html += '<li data-index="' + i + '"'
                     + ' class="' + classes.join(' ') + '">';
 
-                html += this.control.getItemHTML(this.control.datasource[i]);
+                html += control.getItemHTML(dataItem) + '</li>';
             }
+            return html;
+        }
 
-            element.innerHTML = html;
+        /**
+         * 主菜单渲染
+         * @param {HTMLElement} element 主菜单浮层dom节点
+         */
+        CommandMenuLayer.prototype.render = function (element) {
+            var me = this;
+            var control = me.control;
+            var datasource = control.datasource;
+            element.innerHTML = getLayerHtml(control, datasource);
         };
 
+        /**
+         * 根据datasource里的数据项生成对应element的创建子菜单，
+         * @param {HTMLElement} element 主菜单浮层dom节点
+         * @param {Object} datasource 子菜单的数据项，结构与主菜单的数据项一致。
+         */
+        CommandMenuLayer.prototype.createSubLayer = function (element, datasource) {
+            var subLayerElement = Layer.create('ul');
+            subLayerElement.className = element.className;
+            subLayerElement.innerHTML = getLayerHtml(this.control, datasource);
+            document.body.appendChild(subLayerElement);
+            return subLayerElement;
+        };
+
+        /**
+         * 隐藏层
+         * @override
+         */
+        CommandMenuLayer.prototype.hide = function () {
+            for (var i in this.subLayers) {
+                var classes = getHiddenClasses(this);
+                lib.addClasses(this.subLayers[i], classes);
+            }
+            Layer.prototype.hide.apply(this, arguments);
+        };
+
+        /**
+         * 初始化层的交互行为
+         *
+         * @param {HTMLElement} element 层元素
+         * @override
+         */
         CommandMenuLayer.prototype.initBehavior = function (element) {
-            this.control.helper.addDOMEvent(element, 'click', selectItem);
             var me = this;
-            this.control.addGlobalScrollHandler(function () {
+            me.control.helper.addDOMEvent(element, 'click', u.partial(selectItem, me.control.datasource));
+            me.control.addGlobalScrollHandler(function () {
                 if (me.control.hasState('active')) {
                     me.toggle();
                 }
             });
+            u.each(me.control.datasource, u.partial(createSubLayers, me, element));
+            me.control.helper.addDOMEvent(element, 'mouseover', u.partial(layerHoverHandler, me));
+            me.control.helper.addDOMEvent(me.control.main, 'mouseover', u.partial(layerOutHandler, me));
+        };
+
+        /**
+         * 创建所有的子菜单浮层。
+         * @param {Layer} layer 主菜单浮层对象
+         * @param {HTMLElement} element 主菜单浮层dom节点
+         * @param {Object} item 针对每一个子菜单的数据项
+         * @param {number} index 主菜单中需要生成子菜单所对应的索引号。
+         */
+        function createSubLayers(layer, element, item, index) {
+            var children = item.children;
+            if (children && children.length > 0) { // 生成二级子菜单。
+                layer.subLayers[index] = layer.createSubLayer(element, children);
+                layer.control.helper.addDOMEvent(layer.subLayers[index], 'click', u.partial(selectItem, children));
+            }
+        }
+
+        /**
+         * 主菜单的hover事件处理函数
+         * @param {Layer} layer 主菜单浮层对象
+         * @param {Event} e hover事件对象
+         */
+        function layerHoverHandler(layer, e) {
+            var target = e.target;
+            var currentIndex = +target.getAttribute('data-index');
+            if (!/node-disabled/.test(target.className) && /node-has-children/.test(target.className)) {
+                for (var i in layer.subLayers) {
+                    if (+i === currentIndex) {
+                        positionSubLayer(layer, e.currentTarget, currentIndex);
+                        return;
+                    }
+                }
+            }
+            layerOutHandler(layer, e);
+        }
+
+        /**
+         * 主菜单的mouseout事件处理函数
+         * @param {Layer} layer 主菜单浮层对象
+         * @param {Event} e hover事件对象
+         */
+        function layerOutHandler(layer, e) {
+            for (var i in layer.subLayers) {
+                var classes = getHiddenClasses(layer);
+                lib.addClasses(layer.subLayers[i], classes);
+            }
+        }
+
+        /**
+         * 改变子菜单浮层的位置。
+         * @param {Layer} layer 主菜单浮层对象
+         * @param {HTMLElement} target 子菜单浮层位置的参照节点
+         * @param {number} index 改变位置的子菜单在主菜单上的索引值。
+         */
+        function positionSubLayer(layer, target, index) {
+            var subLayerElement = layer.subLayers[index];
+            var classes = getHiddenClasses(layer);
+            lib.removeClasses(subLayerElement, classes);
+            Layer.attachTo(subLayerElement, target);
+            var targetOffset = lib.getOffset(target);
+            var left = parseInt(subLayerElement.style.left) + targetOffset.width + 1;
+            var top = parseInt(subLayerElement.style.top) - targetOffset.height;
+            subLayerElement.style.left = left + 'px';
+            subLayerElement.style.top = top + 'px';
+        }
+
+        /**
+         * 菜单浮层销毁 
+         * @override
+         */
+        CommandMenuLayer.prototype.dispose = function () {
+            Layer.dispose.apply(this, arguments);
+            for (var i in this.subLayers) {
+                document.body.removeChild(this.subLayers[i]);
+            }
+            this.subLayers = null;
         };
 
         /**
@@ -164,7 +306,7 @@ define(
          *
          * @type {string}
          */
-        CommandMenu.prototype.itemTemplate = '<span>${text}</span>';
+        CommandMenu.prototype.itemTemplate = '${text}';
 
         /**
          * 获取浮层中每一项的HTML
@@ -204,8 +346,12 @@ define(
                         );
                         break;
                     case 'over':
+                        var elements = [this.main, this.layer.getElement()];
+                        for (var i in this.layer.subLayers) {
+                            elements.push(this.layer.subLayers[i]);
+                        }
                         Layer.delayHover(
-                            [this.main, this.layer.getElement()],
+                            elements,
                             40,
                             u.bind(this.layer.show, this.layer),
                             u.bind(this.layer.hide, this.layer)
@@ -304,6 +450,26 @@ define(
         };
 
         /**
+         * 根据value的值禁用子菜单单条的item
+         * @param {string} mainValue 主菜单的item值
+         * @param {string} value 该主菜单tem所对应的子菜单item的值
+         */
+        CommandMenu.prototype.disableSubItemByValue = function (mainValue, value) {
+            var index = getDataIndexByValue.call(this, mainValue);
+            var children = this.datasource[index].children;
+            var subIndex = 0;
+            for (var j = children.length; subIndex < j; ++subIndex) {
+                if (children[subIndex].value === value) {
+                    break;
+                }
+            }
+            lib.addClasses(
+                lib.find(this.layer.subLayers[index], 'li[data-index="' + subIndex + '"]'),
+                this.helper.getPartClasses('node-disabled')
+            );
+        };
+
+        /**
          * 根据value的值激活单条item
          *
          * @param {string} value  item的值
@@ -311,6 +477,26 @@ define(
         CommandMenu.prototype.enableItemByValue = function (value) {
             lib.removeClasses(
                 getNodeByValue.call(this, value),
+                this.helper.getPartClasses('node-disabled')
+            );
+        };
+
+        /**
+         * 根据value的值激活子菜单单条的item
+         * @param {string} mainValue 主菜单的item值
+         * @param {string} value 该主菜单tem所对应的子菜单item的值
+         */
+        CommandMenu.prototype.enableSubItemByValue = function (mainValue, value) {
+            var index = getDataIndexByValue.call(this, mainValue);
+            var children = this.datasource[index].children;
+            var subIndex = 0;
+            for (var j = children.length; subIndex < j; ++subIndex) {
+                if (children[subIndex].value === value) {
+                    break;
+                }
+            }
+            lib.removeClasses(
+                lib.find(this.layer.subLayers[index], 'li[data-index="' + subIndex + '"]'),
                 this.helper.getPartClasses('node-disabled')
             );
         };
@@ -428,6 +614,7 @@ define(
             }
 
             if (this.layer) {
+                Layer.delayHoverDispose([this.main, this.layer.getElement()]);
                 this.layer.dispose();
                 this.layer = null;
             }
