@@ -148,6 +148,33 @@ define(
         };
 
         /**
+         * 获取浮层DOM元素
+         *
+         * @param {boolean} [create=true] 不存在时是否创建
+         * @return {HTMLElement}
+         */
+        CommandMenuLayer.prototype.getElement = function (create) {
+            var element = this.control.helper.getPart('layer');
+
+            if (!element && create !== false) {
+                element = this.create();
+                this.render(element);
+                lib.addClasses(element, getHiddenClasses(this));
+
+                this.initBehavior(element);
+
+                this.syncState(element);
+
+                // IE下元素始终有`parentNode`，无法判断是否进入了DOM
+                if (!element.parentElement) {
+                    document.body.appendChild(element);
+                }
+            }
+
+            return element;
+        };
+
+        /**
          * 根据datasource里的数据项生成对应element的创建子菜单，
          * @param {HTMLElement} element 主菜单浮层dom节点
          * @param {Object} datasource 子菜单的数据项，结构与主菜单的数据项一致。
@@ -179,6 +206,7 @@ define(
          * @override
          */
         CommandMenuLayer.prototype.initBehavior = function (element) {
+            debugger;
             var me = this;
             me.control.helper.addDOMEvent(element, 'click', u.partial(selectItem, me.control.datasource));
             me.control.addGlobalScrollHandler(function () {
@@ -260,7 +288,7 @@ define(
          * @override
          */
         CommandMenuLayer.prototype.dispose = function () {
-            Layer.dispose.apply(this, arguments);
+            Layer.prototype.dispose.apply(this, arguments);
             for (var i in this.subLayers) {
                 document.body.removeChild(this.subLayers[i]);
             }
@@ -614,7 +642,6 @@ define(
             }
 
             if (this.layer) {
-                Layer.delayHoverDispose([this.main, this.layer.getElement()]);
                 this.layer.dispose();
                 this.layer = null;
             }
