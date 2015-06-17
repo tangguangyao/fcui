@@ -206,7 +206,6 @@ define(
          * @override
          */
         CommandMenuLayer.prototype.initBehavior = function (element) {
-            debugger;
             var me = this;
             me.control.helper.addDOMEvent(element, 'click', u.partial(selectItem, me.control.datasource));
             me.control.addGlobalScrollHandler(function () {
