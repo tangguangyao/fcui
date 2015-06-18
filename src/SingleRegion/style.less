@@ -1,0 +1,114 @@
+.ui-singleregion {
+    display: block;
+    width: 587px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 1px solid #C8C8C8;
+    box-shadow: 0 1px 3px #D8D8D8;
+    background: #FFF;
+    font-size: 12px;
+
+    &.none {
+        display: none;
+    }
+
+    .status-hidden {
+        display: none;
+    }
+
+    .ui-singleregion-container {
+        padding: 10px;
+
+        .ui-singleregion-area {
+            margin: 0;
+            padding: 0;
+            position: relative;
+
+            span {
+                display: inline-block;
+                line-height: 28px;
+                position: absolute;
+                top: 0;
+                left: 0;
+                margin-top: 2px;
+                margin-left: 10px;
+            }
+
+            .ui-singleregion-sector-item {
+                margin-left: 115px;
+                width: 450px;
+            }
+
+            .ui-singleregion-province-item {
+                padding: 0;
+                display: inline-block;
+                line-height: 28px;
+
+                label {
+                    display: block;
+                    min-width: 75px;
+                    height: 26px;
+                    border: 1px solid #FFF;
+                    padding-left: 10px;
+                    cursor: pointer;
+                    white-space: nowrap;
+                    
+                    input{
+                        margin-right: 10px;
+                        cursor: pointer;
+                    }
+                }
+
+                .ui-singleregion-parent-active {
+                    border: 1px solid #C8C8C8;
+                    border-bottom: none;
+                    height: 27px;
+                    box-shadow: 0 1px 3px #D8D8D8;
+                }
+            }
+
+            .ui-singleregion-sub-container {
+                position: absolute;
+                background: #F8F8F8;
+                border: 1px solid #C8C8C8;
+                box-shadow: 0 1px 3px #C8C8C8;
+
+                tr {
+                    label {
+                        border: none;
+                    }
+
+                    .ui-singleregion-sub-last {
+                        padding-right: 10px;
+                        margin-left: 5px;
+                    }
+                }
+            }
+
+            .ui-singleregion-item-for-china,
+            .ui-singleregion-item-for-foreign {
+                display: block;
+                max-width: 560px;
+                margin: 0;
+                padding: 0 10px;
+                position: relative;
+                height: 30px;
+                background-color: #F8F8F8;
+            }
+
+            .ui-singleregion-item-for-china + span {
+                margin-top: 30px;
+            }
+
+            .ui-singleregion-item-for-foreign + div {
+                margin-left: 10px;
+                
+                label {
+                    padding-left: 0;
+                    margin-right: 34px;
+                }
+            }
+        }
+    }
+}

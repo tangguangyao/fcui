@@ -1,0 +1,129 @@
+.text-ellipsis() {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.ui-tree-selector-button {
+    position: relative;
+
+    .open {
+        width: 180px;
+    }    
+
+    .tree-selector-container {
+        width: 690px;
+        height: auto;
+        position: absolute;
+        border: 1px solid #E3E3E3;
+        background: #fff;
+        display: none;
+        z-index: 10;
+
+        .selector-wrapper {
+            width: 660px;
+            height: 390px;
+            margin: 15px 15px 0px 15px;
+        }
+
+        .button-save-cancel {
+            margin: 0 0 15px 15px;
+            clear: left;
+
+            .save {
+                margin-right: 10px; 
+            }
+        }
+    }
+
+    .skin-ui-fc-treeselectorbutton-select:extend(.skin-ui-fc-select) { }
+
+    .skin-ui-fc-treeselectorbutton-select:after:extend(.skin-ui-fc-select:after) { }
+}
+
+.ui-tree-selector {
+    width: 660px;
+    height: 420px;
+    background: #FFF;
+    color: #333;
+
+    .selector-option-list,
+    .selector-chosen-list {
+        width: 310px;
+        height: 388px;
+        float: left;
+        border: 1px solid #D8D8D8
+    }
+
+    .selector-option-title,
+    .selector-chosen-title {
+        height: 30px;
+        line-height: 30px;
+        padding-left: 10px;
+        background-color: #F8F8F8;
+    }
+
+    .selector-option,
+    .selector-chosen {
+        width: 310px;
+        height: 360px;
+        overflow-y: auto;
+    }
+
+    .selector-total-remove {
+        margin: 5px;
+        overflow: hidden;
+
+        .remove-all-chosen {
+            float: right;
+            cursor: pointer;
+            color: #00B3F8;
+        }
+
+        .over-limit {
+            color: #E30000;
+        }
+    }
+
+    .selector-arrow {
+        height: 420px;
+        line-height: 420px;
+        float: left;
+        color: #CCC;
+    }
+
+    .tree-item-edit-container {
+        position: relative;
+
+        .tree-item-text {
+            .text-ellipsis();
+            padding-right: 40px;
+        }
+
+        .tree-item-add {
+            width: 25px;
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            right: 0;
+
+            .font-icon {
+                color: #00B3F8;
+            }
+
+            .added {
+                color: #CCC;
+                cursor: default;
+            }
+        }
+    }
+
+    .ui-tree-content-wrapper {
+        padding-left: 0px;
+    }
+
+    .ui-tree-content-wrapper-selected{
+        background: #fff;
+        border-left: 4px solid #fff;
+    }
+}
