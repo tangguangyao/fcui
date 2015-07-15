@@ -64,6 +64,7 @@ define(function (require) {
         }
 
         element = me.create();
+        document.body.appendChild(element);
         me.render(element);
         lib.addClasses(element, getHiddenClasses(me));
         if (control.layerClass) {
@@ -103,7 +104,6 @@ define(function (require) {
         }
         me.syncState(element);
         me.initBehavior(element);
-        document.body.appendChild(element);
         control.fire('afterrender');
         return element;
     };
