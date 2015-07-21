@@ -434,6 +434,11 @@ define(
             type: 'FcPager',
 
             /**
+             * 样式改回‘Pager’
+             */
+            styleType: 'Pager',
+
+            /**
              * 默认属性
              *
              * @type {Object}
